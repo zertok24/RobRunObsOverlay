@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ROB RUN - stats du wipe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500&display=swap">
+<style>
+  :root {
+    --ink: #e9ecf1; --mute: #8e98a8; --panel: rgba(20, 24, 33, .88);
+    --amber: #f2b134; --red: #e5534b; --green: #4cc38a; --line: rgba(255,255,255,.1);
+  }
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  body { font-family: Barlow, "Segoe UI", sans-serif; font-weight: 500; color: var(--ink); }
+  .card { width: 340px; box-sizing: border-box; padding: 14px 16px 12px; background: var(--panel);
+          border-left: 5px solid var(--amber); border-radius: 0 10px 10px 0; transition: opacity .4s; }
+  .card.off { opacity: .45; border-left-color: var(--mute); }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--mute); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .pp { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+  .credit { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 12px; color: var(--mute); }
+  .credit b { color: var(--ink); font-weight: 500; }
+  .hero { display: flex; align-items: baseline; gap: 12px; margin: 6px 0 10px; }
+  .big { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700; font-size: 68px; line-height: 1; letter-spacing: -.01em; }
+  .hero small { font-size: 15px; color: var(--mute); line-height: 1.25; }
+  .hero small b { color: var(--ink); font-weight: 500; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .cell { background: rgba(20, 24, 33, .95); padding: 7px 10px; }
+  .cell span { display: block; font-size: 13px; color: var(--mute); }
+  .cell b { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 28px; font-weight: 600; line-height: 1.1; }
+  .cell.red b { color: var(--red); }
+  .live { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; font-size: 14px; }
+  .tag { padding: 2px 12px; border-radius: 99px; background: rgba(255,255,255,.12); color: var(--ink); opacity: 0; transition: opacity .35s; }
+  .tag.on { opacity: 1; }
+  .bump { animation: bump .6s ease-out; }
+  @keyframes bump { 0% { color: var(--amber); transform: scale(1.12); } 100% { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .bump { animation: none; } }
+</style>
+</head>
+<body>
+<div class="card off" id="card">
+  <div class="top">
+    <div class="brand"><img class="pp" src="/logo.png" alt="" onerror="this.remove()"><span id="wipe">Wipe</span></div>
+    <span id="ping"></span>
+  </div>
+  <div class="hero">
+    <div class="big" id="surv">--</div>
+    <small>sortis vivants<br><b id="survsub">aucun raid terminé</b></small>
+  </div>
+  <div class="grid">
+    <div class="cell"><span>Raids</span><b id="raids">0</b></div>
+    <div class="cell red"><span>Morts</span><b id="deaths">0</b></div>
+    <div class="cell"><span>KO</span><b id="knockouts">0</b></div>
+  </div>
+  <div class="live"><span class="tag" id="item">&nbsp;</span></div>
+  <div class="credit"><b>RobRunObsOverlay</b><span>discord: zertok</span></div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const last = {};
+
+  function set(id, value) {
+    const el = $(id);
+    if (el.textContent === String(value)) return;
+    el.textContent = value;
+    if (id in last) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+    last[id] = value;
+  }
+  function render(p) {
+    $("card").classList.remove("off");
+    const days = Math.floor((Date.now() - new Date(p.wipe_started)) / 864e5) + 1;
+    $("wipe").textContent = `Wipe · jour ${Math.max(days, 1)}`;
+    $("ping").textContent = p.ping != null ? `${p.ping} ms` : "";
+    set("surv", p.survival_pct == null ? "--" : p.survival_pct + "%");
+    $("survsub").textContent = p.raids_done
+      ? `${p.raids_survived} sur ${p.raids_done}` : "aucun raid terminé";
+    set("raids", p.raids);
+    set("deaths", p.deaths);
+    set("knockouts", p.knockouts);
+
+    if (p.item) $("item").textContent = p.item;
+    $("item").classList.toggle("on", !!p.item);
+  }
+
+  async function tick() {
+    try {
+      const r = await fetch("/stats.json", { cache: "no-store" });
+      render(await r.json());
+    } catch (e) {
+      $("card").classList.add("off");
+      $("item").classList.remove("on");
+      $("wipe").textContent = "Script arrêté";
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
