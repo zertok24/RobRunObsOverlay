@@ -122,4 +122,4 @@ Le jeu écrit son log dans `%USERPROFILE%\AppData\LocalLow\Kefir\ROB RUN\Player.
 
 ## Contact
 
-Un souci, une idée ? Discord : **zertok**
+Un souci, une idée ? Discord : [**zertok** ](https://discord.gg/Qn9Bb4Ejsc)
